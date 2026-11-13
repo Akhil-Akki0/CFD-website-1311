@@ -1,0 +1,85 @@
+# =============================================================================
+# Production Hardened Docker Compose Specification
+# DEVELOPED by Akhil.A gmail :- akkedu01@gmail.com
+# =============================================================================
+
+version: '3.8'
+
+services:
+  cfd-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: cfd_hardened_backend
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    pids_limit: 256
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - ALLOWED_ORIGIN=${ALLOWED_ORIGIN:-http://localhost:3000}
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - CASE_TIMEOUT_MS=${CASE_TIMEOUT_MS:-600000}
+      - MAX_CONCURRENT_JOBS=${MAX_CONCURRENT_JOBS:-10}
+      - OPENFOAM_EXEC_MODE=local
+    tmpfs:
+      - /tmp/of_cases:rw,noexec,nosuid,size=2g,uid=10001,gid=10001
+      - /tmp:rw,noexec,nosuid,size=512m
+    networks:
+      - cfd-internal-net
+    expose:
+      - "3001"
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  nginx-proxy:
+    image: nginx:1.25-alpine
+    container_name: cfd_tls_nginx_proxy
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./dist:/usr/share/nginx/html:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    tmpfs:
+      - /var/cache/nginx:rw,noexec,nosuid,size=256m
+      - /var/run:rw,noexec,nosuid,size=16m
+    depends_on:
+      - cfd-backend
+    networks:
+      - cfd-internal-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+networks:
+  cfd-internal-net:
+    driver: bridge
+    internal: false

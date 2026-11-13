@@ -1,0 +1,6 @@
+{
+  "name": "CFD Platform — Aerodynamics & AI Simulation Engine",
+  "description": "Next-generation browser CFD platform featuring real-time Navier-Stokes aerodynamic simulation, Fourier Neural Operators (FNO), interactive 3D scalar fields, and automated engineering compliance reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
